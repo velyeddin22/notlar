@@ -43,9 +43,9 @@ Future<String?> uploadFileToFTP({
   String remotePath = "assets/$uniqueFileName";
 
   FTPConnect ftpConnect = FTPConnect(
-    "ftp.dovmetasarimcisi.com",
-    user: "bitanidiklazim@dovmetasarimcisi.com",
-    pass: "BiTanidikLazim.!.",
+    "ftp.codefellas.com.tr",
+    user: "not@codefellas.com.tr",
+    pass: "Not22bj744Not.!.",
     port: 21,
     timeout: 10,
     securityType: SecurityType.ftp,
