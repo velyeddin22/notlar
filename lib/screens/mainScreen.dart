@@ -9,6 +9,8 @@ import 'package:provider/provider.dart';
 import '../account/login.dart';
 import '../services/prefs.dart';
 import '../services/provider.dart';
+import 'favoriler.dart';
+import 'notDetaylari.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -146,7 +148,16 @@ class _MainPageState extends State<MainPage> {
                   title: "Favoriler",
                   icon: Icons.favorite_border,
                   color: Colors.pinkAccent,
-                  onTap: () {},
+                  onTap: () {
+                    // BURAYI GÜNCELLEDİK:
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            const FavoritesPage(), // Yeni oluşturduğumuz sayfa
+                      ),
+                    );
+                  },
                 ),
                 _buildMenuCard(
                   title: "Profilim",
@@ -416,3 +427,5 @@ class _MainPageState extends State<MainPage> {
     }
   }
 }
+
+class index {}

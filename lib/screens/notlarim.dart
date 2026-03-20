@@ -30,7 +30,6 @@ class _notState extends State<not> {
 
   @override
   Widget build(BuildContext context) {
-    // ID yüklenene kadar boş dönmesin, yükleme animasyonu gösterelim
     if (currentUserId == null) {
       return Scaffold(
         backgroundColor: const Color(0xFFF8F9FD),
@@ -133,30 +132,63 @@ class _notState extends State<not> {
 class _BuildNoteList extends StatelessWidget {
   final String filterType;
   final int currentUserId;
+
   const _BuildNoteList({required this.filterType, required this.currentUserId});
+
+  Future<List> _fetchAndFilterNotes() async {
+    List<Map<String, dynamic>>? allNotes = await getCustomAllData(
+      tabloAdi: "notlar",
+    );
+
+    if (filterType == "purchased") {
+      List<Map<String, dynamic>>? allSales = await getCustomAllData(
+        tabloAdi: "satislar",
+      );
+
+      // Sadece bu kullanıcının yaptığı satın almaları filtrele
+      var myPurchases = allSales!.where((satis) {
+        return satis['alici_id'].toString() == currentUserId.toString();
+      }).toList();
+
+      List<Map<String, dynamic>> finalPurchasedNotes = [];
+
+      // Satın aldığımız her bir notu bulup fiyatını "ödenen fiyat" olarak güncelliyoruz
+      for (var satis in myPurchases) {
+        var noteId = satis['not_id'].toString();
+
+        // Eşleşen notu bul
+        var matchedNote = allNotes!
+            .where((n) => n['id'].toString() == noteId)
+            .toList();
+
+        if (matchedNote.isNotEmpty) {
+          // Orijinal veriyi bozmamak için kopyasını alıyoruz
+          Map<String, dynamic> modifiableNote = Map.from(matchedNote.first);
+
+          // Fiyatı, satışlar tablosundaki ödenen fiyat ile EZİYORUZ.
+          // Böylece kartta direkt ödediği fiyat görünecek.
+          modifiableNote['fiyat'] = satis['odenen_fiyat'];
+
+          finalPurchasedNotes.add(modifiableNote);
+        }
+      }
+
+      return finalPurchasedNotes;
+    } else {
+      // Kendi notlarıysa fiyatı hiç ellemeden direkt yüklüyoruz
+      return allNotes!.where((note) {
+        return note['yukleyen_id'].toString() == currentUserId.toString();
+      }).toList();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-      future: getCustomAllData(tabloAdi: "notlar"),
+      future: _fetchAndFilterNotes(),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
-          List allData = snapshot.data as List;
-          List filteredData = [];
-
-          if (filterType == "purchased") {
-            // Şimdilik test için hepsini gösteriyoruz.
-            // Satın alma tablon hazır olduğunda oradan JOIN ile çekmelisin.
-            filteredData = allData;
-          } else {
-            // Kendi notlarını filtreleme mantığı (ID kontrolü burada yapılıyor)
-            filteredData = allData
-                .where(
-                  (e) =>
-                      e['yukleyen_id'].toString() == currentUserId.toString(),
-                )
-                .toList();
-          }
+          List filteredData = snapshot.data as List;
 
           if (filteredData.isEmpty) {
             return Center(
@@ -181,6 +213,7 @@ class _BuildNoteList extends StatelessWidget {
                 data: filteredData[index],
                 index: index,
                 fullList: filteredData,
+                // myPurchases'a artık gerek kalmadı!
               );
             },
           );
@@ -217,7 +250,10 @@ class ModernNotKarti extends StatelessWidget {
   Widget build(BuildContext context) {
     String ad = data["not_ad"]?.toString() ?? "İsimsiz Not";
     String uni = data["universite_ad"]?.toString() ?? "Genel Kategori";
+
+    // Fiyatı standart şekilde çekiyoruz. Çünkü arka tarafta gereken yerde odenen_fiyat ile ezdik!
     String fiyat = data["fiyat"]?.toString() ?? "0.00";
+
     String sayfa = data["sayfa_sayisi"]?.toString() ?? "0";
     String foto =
         data["ornek_foto"]?.toString() ?? "https://via.placeholder.com/150";

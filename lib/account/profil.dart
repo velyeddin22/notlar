@@ -383,7 +383,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(width: 10),
                   Text(
-                    yorum["yotumu_yapan"] ?? "Anonim",
+                    yorum["yorumu_yapan"] ?? "Anonim",
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
