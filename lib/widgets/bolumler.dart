@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:not/details/fakulteler.dart'; // Bu dosyanın yolu projenize göre kalmalı
+import 'package:not/details/fakulteler.dart';
+
+import '../screens/aramaSayfasi.dart'; // Bu dosyanın yolu projenize göre kalmalı
 
 class bolumlerList extends StatefulWidget {
   final int id;
@@ -167,25 +169,29 @@ class _bolumlerListState extends State<bolumlerList> {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
-            // Seçim Mantığı
-            Navigator.pop(context); // Sayfayı kapat
+            // Seçilen fakülte adı:
+            String fakulteAdi = fakulteler.fakulteleriGetir()[widget.id];
+            
+            // Biz aramayı esnek yaptığımız için (ve kelime bölme eklediğimiz için)
+            // ister "Mühendislik Fakültesi / Çevre Mühendisliği" yaz,
+            // ister sadece "Çevre Mühendisliği" yaz bulur. Biz ikisini de gönderelim.
+            String secilenKategori = "$fakulteAdi $bolumAdi";
 
-            // Eğer veriyi bir önceki sayfaya göndermek istiyorsanız:
-            // Navigator.pop(context, "${fakulteler.fakulteleriGetir()[widget.id]}/$bolumAdi");
-
-            // Sizin orijinal kodunuzdaki mantık (2 kere pop ve veri gönderme):
-            // Bu kısım Navigasyon yapınıza göre hata verebilir,
-            // tek pop ve veri döndürmek genellikle daha sağlıklıdır.
-            Navigator.pop(
+            // YENİ MANTIK: Geri gitmek (pop) yerine, direkt Arama sayfasına PUSH yapıyoruz.
+            Navigator.push(
               context,
-              "${fakulteler.fakulteleriGetir()[widget.id]}/$bolumAdi",
+              MaterialPageRoute(
+                builder: (context) => AramaSayfasi(
+                  initialCategory: secilenKategori, // Arama sayfasında hazır filtre olarak gidecek!
+                ),
+              ),
             );
           },
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
             child: Row(
               children: [
-                // Sıra Numarası (Badged Style)
+                // Sıra Numarası
                 Container(
                   height: 32,
                   width: 32,

@@ -53,10 +53,10 @@ class _notState extends State<not> {
                 floating: true,
                 pinned: true,
                 elevation: 0,
-                flexibleSpace: FlexibleSpaceBar(
+                flexibleSpace: FlexibleSpaceBar(centerTitle: true,
                   titlePadding: const EdgeInsetsDirectional.only(
                     start: 0,
-                    top: 10,
+                    top: 60,
                     bottom: 0,
                   ),
                   title: const Center(
@@ -250,13 +250,9 @@ class ModernNotKarti extends StatelessWidget {
   Widget build(BuildContext context) {
     String ad = data["not_ad"]?.toString() ?? "İsimsiz Not";
     String uni = data["universite_ad"]?.toString() ?? "Genel Kategori";
-
-    // Fiyatı standart şekilde çekiyoruz. Çünkü arka tarafta gereken yerde odenen_fiyat ile ezdik!
     String fiyat = data["fiyat"]?.toString() ?? "0.00";
-
     String sayfa = data["sayfa_sayisi"]?.toString() ?? "0";
-    String foto =
-        data["ornek_foto"]?.toString() ?? "https://via.placeholder.com/150";
+    String foto = data["ornek_foto"]?.toString() ?? "https://via.placeholder.com/150";
     String uzanti = data["dosya_uzantisi"]?.toString() ?? "PDF";
     int onay = int.tryParse(data["onay_durumu"]?.toString() ?? "0") ?? 0;
 
@@ -291,13 +287,14 @@ class ModernNotKarti extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // 1. SOL KISIM (Resim alanı biraz daraltıldı ki ortaya yer kalsın)
                 Stack(
                   children: [
                     Container(
-                      width: 100,
-                      margin: const EdgeInsets.all(12),
+                      width: 85, // 100'den 85'e düşürdük
+                      margin: const EdgeInsets.all(10), // Margin 12'den 10'a düştü
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(16),
                         image: DecorationImage(
                           image: NetworkImage(foto),
                           fit: BoxFit.cover,
@@ -324,14 +321,17 @@ class ModernNotKarti extends StatelessWidget {
                     ),
                   ],
                 ),
+
+                // 2. ORTA KISIM (Bilgiler)
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                      vertical: 16,
-                      horizontal: 8,
+                      vertical: 14,
+                      horizontal: 4,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         TextScroll(
                           ad,
@@ -357,13 +357,18 @@ class ModernNotKarti extends StatelessWidget {
                                   fontSize: 12,
                                   color: Colors.blueGrey,
                                 ),
+                                maxLines: 1, // Ekstra güvenlik: okul adı uzunsa tek satırda kessin
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 10),
-                        Row(
+                        // HATA BURADAYDI: Row yerine Wrap kullandık. 
+                        // Sığmazsa otomatik olarak alt satıra geçer, taşıma hatası vermez.
+                        Wrap(
+                          spacing: 6, // Yan yana rozetler arası boşluk
+                          runSpacing: 6, // Alt alta rozetler arası boşluk (sığmazsa)
                           children: [
                             _buildSmallBadge(
                               Icons.pages_outlined,
@@ -371,7 +376,6 @@ class ModernNotKarti extends StatelessWidget {
                               Colors.orange.shade50,
                               Colors.orange.shade700,
                             ),
-                            const SizedBox(width: 8),
                             if (onay == 1)
                               _buildSmallBadge(
                                 Icons.verified_user_outlined,
@@ -385,8 +389,10 @@ class ModernNotKarti extends StatelessWidget {
                     ),
                   ),
                 ),
+
+                // 3. SAĞ KISIM (Fiyat alanı gereksiz genişti, daralttık)
                 Container(
-                  width: 85,
+                  width: 75, // 85'ten 75'e düşürdük
                   color: const Color(0xFFF1F4FF),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -398,7 +404,7 @@ class ModernNotKarti extends StatelessWidget {
                       Text(
                         "₺$fiyat",
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: 15, // 16'dan 15'e çektik
                           fontWeight: FontWeight.w900,
                           color: Color(0xFF6C63FF),
                         ),
@@ -427,7 +433,7 @@ class ModernNotKarti extends StatelessWidget {
     Color textColor,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(6),

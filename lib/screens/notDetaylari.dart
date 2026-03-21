@@ -8,7 +8,8 @@ import 'package:flutter_windowmanager_plus/flutter_windowmanager_plus.dart';
 import '../services/favorite_service.dart';
 import '../services/internettenVeriler.dart';
 import '../services/prefs.dart';
-
+  bool hasPurchased = false;
+int totalSalesCount = 0; 
 /// ===============================
 /// GÜVENLİ PDF GÖRÜNTÜLEYİCİ (Uygulama İçinde)
 /// ===============================
@@ -26,7 +27,8 @@ class _SecurePdfViewerState extends State<SecurePdfViewer> {
   String? localPath;
   bool isLoading = true;
   String progress = "Hazırlanıyor...";
-  bool isFav = false; // initState'de kontrol edilecek
+  bool isFav = false; 
+
   @override
   void initState() {
     super.initState();
@@ -139,13 +141,13 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   double averageRating = 0.0;
   int totalReviews = 0;
 
-  @override
+ @override
   void initState() {
     super.initState();
     _loadUser();
     _checkIfFavorite();
     _incrementViewCount();
-    _fetchComments();
+  
     FlutterWindowManagerPlus.addFlags(FlutterWindowManagerPlus.FLAG_SECURE);
   }
 
@@ -154,16 +156,17 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     FlutterWindowManagerPlus.clearFlags(FlutterWindowManagerPlus.FLAG_SECURE);
     super.dispose();
   }
-
-  void _loadUser() async {
+void _loadUser() async {
     var id = await Storage.getInt("userid");
-    // Eğer Storage'da kullanıcının adını tutuyorsan aşağıdakini açabilirsin:
-    // var ad = await Storage.getString("ad") ?? "Kullanıcı";
+    var kuallniciBilgisi = await getCustomData(tabloAdi: 'hesaplar', whereColumnName: 'id', whereColumnValue: '$id');
+    
     setState(() {
       currentUserId = id;
-      // currentUserName = ad;
+      currentUserName = kuallniciBilgisi!.first['ad'];
     });
+    
     _checkIfPurchased();
+    _fetchComments(); 
   }
 
   // --- YORUMLARI GETİR ---
@@ -438,22 +441,31 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   }
 
   Future<void> _checkIfPurchased() async {
-    if (currentUserId == null) return;
-
     final data = widget.liste![widget.index];
     String noteId = data["id"]?.toString() ?? "";
 
     try {
       List? allSales = await getCustomAllData(tabloAdi: "satislar");
       if (allSales != null) {
-        bool bought = allSales.any(
-          (satis) =>
-              satis['alici_id'].toString() == currentUserId.toString() &&
-              satis['not_id'].toString() == noteId,
-        );
+        // 1. Toplam satış sayısını hesapla
+        int salesCount = allSales
+            .where((satis) => satis['not_id'].toString() == noteId)
+            .toList()
+            .length;
+
+        // 2. Senin satın alıp almadığını kontrol et (Kullanıcı giriş yaptıysa)
+        bool bought = false;
+        if (currentUserId != null) {
+          bought = allSales.any(
+            (satis) =>
+                satis['alici_id'].toString() == currentUserId.toString() &&
+                satis['not_id'].toString() == noteId,
+          );
+        }
 
         if (mounted) {
           setState(() {
+            totalSalesCount = salesCount; // Sayacı güncelle
             hasPurchased = bought;
           });
         }
@@ -581,26 +593,32 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                       const SizedBox(height: 25),
                       _buildSchoolCard(university, department, fakulte_adi),
                       const SizedBox(height: 30),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _buildStatItem(
-                            Icons.auto_stories_outlined,
-                            "Sayfa",
-                            pageCount,
-                          ),
-                          _buildStatItem(
-                            Icons.visibility_outlined,
-                            "Görünüm",
-                            views,
-                          ),
-                          _buildStatItem(
-                            Icons.person_pin_outlined,
-                            "Yazar",
-                            uploader,
-                          ),
-                        ],
-                      ),
+                    Row(
+  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  children: [
+    _buildStatItem(
+      Icons.auto_stories_outlined,
+      "Sayfa",
+      pageCount,
+    ),
+    _buildStatItem(
+      Icons.visibility_outlined,
+      "Görünüm",
+      views,
+    ),
+    // YENİ EKLEDİĞİMİZ SATIŞ/İNDİRME SAYACI BURASI
+    _buildStatItem(
+      Icons.shopping_bag_outlined, // İstersen Icons.download_outlined da yapabilirsin
+      "Satış",
+      totalSalesCount.toString(),
+    ),
+    _buildStatItem(
+      Icons.person_pin_outlined,
+      "Yazar",
+      uploader,
+    ),
+  ],
+),
                       const SizedBox(height: 30),
                       const Divider(),
                       const SizedBox(height: 20),
@@ -626,41 +644,37 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                       const SizedBox(height: 20),
 
                       // BAŞLIK VE YORUM YAPMA BUTONU
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            "Değerlendirmeler",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          // Kendi notu değilse yorum yapma butonu çıksın
-                          if (!isMyNote && currentUserId != null)
-                            TextButton.icon(
-                              onPressed: () => _showCommentDialog(),
-                              icon: Icon(
-                                currentUserComment != null
-                                    ? Icons.edit
-                                    : Icons.add_comment,
-                                size: 16,
-                                color: const Color(0xFF6C63FF),
-                              ),
-                              label: Text(
-                                currentUserComment != null
-                                    ? "Düzenle"
-                                    : "Yorum Yap",
-                                style: const TextStyle(
-                                  color: Color(0xFF6C63FF),
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
+                    Row(
+  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  children: [
+    const Text(
+      "Değerlendirmeler",
+      style: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+    // Buradaki kontrolü sadeleştiriyoruz:
+    if (!isMyNote && currentUserId != null)
+      TextButton.icon(
+        onPressed: () => _showCommentDialog(),
+        icon: Icon(
+          currentUserComment != null ? Icons.edit : Icons.add_comment,
+          size: 18,
+          color: const Color(0xFF6C63FF),
+        ),
+        label: Text(
+          currentUserComment != null ? "Düzenle" : "Yorum Yap",
+          style: const TextStyle(
+            color: Color(0xFF6C63FF),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+  ],
+),
                       const SizedBox(height: 12),
-                      _buildCommentsSection(),
+                     _buildCommentsSection(isMyNote),
 
                       const SizedBox(height: 120),
                     ],
@@ -679,47 +693,84 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     );
   }
 
-  Widget _buildCommentsSection() {
-    if (isLoadingComments) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(20.0),
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
-    if (yorumlarListesi.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(20),
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: const Color(0xFFF1F4FF),
-          borderRadius: BorderRadius.circular(15),
-        ),
-        child: const Text(
-          "Bu not için henüz değerlendirme yapılmamış.\nİlk yorum yapan sen ol!",
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.grey, height: 1.5),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: EdgeInsets.zero,
-      itemCount: yorumlarListesi.length,
-      itemBuilder: (context, index) {
-        var yorum = yorumlarListesi[index];
-        // Kendi yorumumuzu en üste veya belirgin şekilde göstermek istersek ufak bir renk atayabiliriz
-        bool isMyComment =
-            yorum["yorum_id"].toString() ==
-            (currentUserComment?["yorum_id"]?.toString() ?? "");
-        return _buildSingleComment(yorum, isMyComment);
-      },
+ Widget _buildCommentsSection(bool isMyNote) {
+  if (isLoadingComments) {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(20.0),
+        child: CircularProgressIndicator(),
+      ),
     );
   }
+
+  if (yorumlarListesi.isEmpty) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.all(30),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FF),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF6C63FF).withOpacity(0.1)),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.reviews_outlined, color: Colors.grey.shade400, size: 40),
+          const SizedBox(height: 15),
+          const Text(
+            "Henüz Değerlendirme Yok",
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+          ),
+          const SizedBox(height: 8),
+
+          // AKILLI KONTROL: Kendi notu mu, başkasının mı?
+          if (!isMyNote) ...[
+            // Başkasının notuysa tahrik edici metin ve buton gelsin
+            Text(
+              "Bu notu ilk sen puanla ve arkadaşlarına yol göster!",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => _showCommentDialog(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF6C63FF),
+                side: const BorderSide(color: Color(0xFF6C63FF)),
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text("Hemen Yorum Yaz"),
+            ),
+          ] else ...[
+            // Kendi notuysa sadece bilgilendirme yapsın
+            Text(
+              "Notun için henüz bir değerlendirme yapılmamış.",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+            ),
+          ]
+        ],
+      ),
+    );
+  }
+
+  // Yorumlar varsa Liste buraya gelir...
+  return ListView.builder(
+    shrinkWrap: true,
+    physics: const NeverScrollableScrollPhysics(),
+    itemCount: yorumlarListesi.length,
+    itemBuilder: (context, index) {
+      print(yorumlarListesi[index]["yorumu_yapan"]);
+      return _buildSingleComment(
+        yorumlarListesi[index], 
+
+        yorumlarListesi[index]["yorumu_yapan_id"].toString() == currentUserId.toString()
+      );
+    },
+  );
+}
 
   Widget _buildSingleComment(Map<String, dynamic> yorum, bool isMyComment) {
     String userName = yorum["yorumu_yapan"] ?? "Kullanıcı";
